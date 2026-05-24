@@ -1,3 +1,22 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: customer-management-api
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/customer_management_db
+    username: postgres
+    password: 123479
+
+    jpa:
+      hibernate:
+        ddl-auto: update
+        show-sql: true
+        properties:
+          hibernate:
+            format_sql: true
+
+
+
