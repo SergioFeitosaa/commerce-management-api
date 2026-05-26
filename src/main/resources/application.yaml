@@ -10,13 +10,13 @@ spring:
     username: postgres
     password: 123479
 
-    jpa:
-      hibernate:
-        ddl-auto: update
-        show-sql: true
-        properties:
-          hibernate:
-            format_sql: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+  show-sql: true
+  properties:
+    hibernate:
+      format_sql: true
 
 
 
