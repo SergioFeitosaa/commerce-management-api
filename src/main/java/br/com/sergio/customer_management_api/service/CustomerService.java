@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -44,4 +43,18 @@ public class CustomerService {
                 .toList();
     }
 
+    public CustomerResponseDTO findById(Long id) {
+        Customer customer = customerRepository
+                .findById(id)
+                .orElseThrow();
+        return new CustomerResponseDTO(
+                customer.getId(),
+                customer.getName(),
+                customer.getEmail()
+        );
+
+    }
+
+
 }
+

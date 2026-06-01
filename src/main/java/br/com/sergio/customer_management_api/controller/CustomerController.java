@@ -27,7 +27,13 @@ public class CustomerController {
 
     @GetMapping
     public ResponseEntity<List<CustomerResponseDTO>> findAll() {
-        List<CustomerResponseDTO> customerResponseDTOList = customerService.findAll();
-        return ResponseEntity.status(HttpStatus.OK).body(customerResponseDTOList);
+        List<CustomerResponseDTO> response = customerService.findAll();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping ("/{id}")
+    public ResponseEntity<CustomerResponseDTO> findById (@PathVariable Long id){
+        CustomerResponseDTO response = customerService.findById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
