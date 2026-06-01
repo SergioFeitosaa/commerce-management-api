@@ -7,6 +7,9 @@ import br.com.sergio.customer_management_api.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Stream;
+
 @Service
 @RequiredArgsConstructor
 public class CustomerService {
@@ -23,11 +26,22 @@ public class CustomerService {
         customer.setPhoneNumber(dto.phoneNumber());
 
         Customer customesaved = customerRepository.save(customer);
-            return new CustomerResponseDTO(
-                    customesaved.getId(),
-                    customesaved.getName(),
-                    customesaved.getEmail()
-            );
+        return new CustomerResponseDTO(
+                customesaved.getId(),
+                customesaved.getName(),
+                customesaved.getEmail()
+        );
+    }
+
+    public List<CustomerResponseDTO> findAll() {
+
+        return customerRepository.findAll()
+                .stream()
+                .map(customer -> new CustomerResponseDTO(
+                        customer.getId(),
+                        customer.getName(),
+                        customer.getEmail()))
+                .toList();
     }
 
 }

@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.PublicKey;
+import java.util.List;
 
 @RestController
 @RequestMapping("/customers")
@@ -18,10 +19,15 @@ public class CustomerController {
 
     private final CustomerService customerService;
 
-    public ResponseEntity<CustomerResponseDTO> create (@RequestBody CustomerRequestDTO dto){
+    @PostMapping
+    public ResponseEntity<CustomerResponseDTO> create(@RequestBody CustomerRequestDTO dto) {
         CustomerResponseDTO response = customerService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-
+    @GetMapping
+    public ResponseEntity<List<CustomerResponseDTO>> findAll() {
+        List<CustomerResponseDTO> customerResponseDTOList = customerService.findAll();
+        return ResponseEntity.status(HttpStatus.OK).body(customerResponseDTOList);
+    }
 }
