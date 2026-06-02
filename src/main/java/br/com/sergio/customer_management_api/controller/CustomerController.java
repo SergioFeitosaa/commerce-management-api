@@ -31,9 +31,15 @@ public class CustomerController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @GetMapping ("/{id}")
-    public ResponseEntity<CustomerResponseDTO> findById (@PathVariable Long id){
+    @GetMapping("/{id}")
+    public ResponseEntity<CustomerResponseDTO> findById(@PathVariable Long id) {
         CustomerResponseDTO response = customerService.findById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CustomerResponseDTO> update(@PathVariable Long id, @RequestBody CustomerRequestDTO dto) {
+        CustomerResponseDTO response = customerService.update(id, dto);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

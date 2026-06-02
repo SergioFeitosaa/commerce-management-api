@@ -52,9 +52,24 @@ public class CustomerService {
                 customer.getName(),
                 customer.getEmail()
         );
-
     }
 
+    public CustomerResponseDTO update(Long id, CustomerRequestDTO dto) {
+        Customer customer = customerRepository
+                .findById(id)
+                .orElseThrow();
 
+        customer.setName(dto.name());
+        customer.setEmail(dto.email());
+        customer.setCpf(dto.cpf());
+        customer.setPhoneNumber(dto.phoneNumber());
+
+       Customer customersaved = customerRepository.save(customer);
+        return new CustomerResponseDTO(
+                customersaved.getId(),
+                customersaved.getName(),
+                customersaved.getEmail()
+        );
+    }
 }
 
