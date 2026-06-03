@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -64,12 +65,21 @@ public class CustomerService {
         customer.setCpf(dto.cpf());
         customer.setPhoneNumber(dto.phoneNumber());
 
-       Customer customersaved = customerRepository.save(customer);
+        Customer customersaved = customerRepository.save(customer);
+
         return new CustomerResponseDTO(
                 customersaved.getId(),
                 customersaved.getName(),
                 customersaved.getEmail()
         );
+    }
+
+    public void delete(Long id) {
+        Customer customer = customerRepository
+                .findById(id)
+                .orElseThrow();
+
+        customerRepository.delete(customer);
     }
 }
 
