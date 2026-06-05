@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDTO> handleGenericException (Exception exception){
+    public ResponseEntity<ErrorResponseDTO> handleGenericException(Exception exception) {
         ErrorResponseDTO error = new ErrorResponseDTO(
                 500,
                 "Internal server error",
