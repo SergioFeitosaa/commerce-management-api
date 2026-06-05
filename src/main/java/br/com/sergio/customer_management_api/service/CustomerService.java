@@ -3,6 +3,7 @@ package br.com.sergio.customer_management_api.service;
 import br.com.sergio.customer_management_api.dto.CustomerRequestDTO;
 import br.com.sergio.customer_management_api.dto.CustomerResponseDTO;
 import br.com.sergio.customer_management_api.entity.Customer;
+import br.com.sergio.customer_management_api.exception.CustomerNotFoundException;
 import br.com.sergio.customer_management_api.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,7 +48,8 @@ public class CustomerService {
     public CustomerResponseDTO findById(Long id) {
         Customer customer = customerRepository
                 .findById(id)
-                .orElseThrow();
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found with id: " + id)
+                );
         return new CustomerResponseDTO(
                 customer.getId(),
                 customer.getName(),
@@ -58,7 +60,9 @@ public class CustomerService {
     public CustomerResponseDTO update(Long id, CustomerRequestDTO dto) {
         Customer customer = customerRepository
                 .findById(id)
-                .orElseThrow();
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found with id: " + id)
+                );
+
 
         customer.setName(dto.name());
         customer.setEmail(dto.email());
@@ -77,7 +81,7 @@ public class CustomerService {
     public void delete(Long id) {
         Customer customer = customerRepository
                 .findById(id)
-                .orElseThrow();
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found with id: " + id));
 
         customerRepository.delete(customer);
     }
