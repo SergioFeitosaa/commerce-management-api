@@ -4,6 +4,7 @@ package br.com.sergio.customer_management_api.controller;
 import br.com.sergio.customer_management_api.dto.CustomerRequestDTO;
 import br.com.sergio.customer_management_api.dto.CustomerResponseDTO;
 import br.com.sergio.customer_management_api.service.CustomerService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @PostMapping
-    public ResponseEntity<CustomerResponseDTO> create(@RequestBody CustomerRequestDTO dto) {
+    public ResponseEntity<CustomerResponseDTO> create(@Valid @RequestBody CustomerRequestDTO dto) {
         CustomerResponseDTO response = customerService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -38,7 +39,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerResponseDTO> update(@PathVariable Long id, @RequestBody CustomerRequestDTO dto) {
+    public ResponseEntity<CustomerResponseDTO> update(@Valid @PathVariable Long id, @RequestBody CustomerRequestDTO dto) {
         CustomerResponseDTO response = customerService.update(id, dto);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
