@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -62,7 +61,6 @@ public class CustomerService {
                 .findById(id)
                 .orElseThrow(() -> new CustomerNotFoundException("Customer not found with id: " + id)
                 );
-
 
         customer.setName(dto.name());
         customer.setEmail(dto.email());
