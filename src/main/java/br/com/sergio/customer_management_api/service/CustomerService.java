@@ -6,6 +6,8 @@ import br.com.sergio.customer_management_api.entity.Customer;
 import br.com.sergio.customer_management_api.exception.CustomerNotFoundException;
 import br.com.sergio.customer_management_api.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -33,15 +35,13 @@ public class CustomerService {
         );
     }
 
-    public List<CustomerResponseDTO> findAll() {
+    public Page<CustomerResponseDTO> findAll(Pageable pageable) {
 
-        return customerRepository.findAll()
-                .stream()
+        return customerRepository.findAll(pageable)
                 .map(customer -> new CustomerResponseDTO(
                         customer.getId(),
                         customer.getName(),
-                        customer.getEmail()))
-                .toList();
+                        customer.getEmail()));
     }
 
 
@@ -55,6 +55,11 @@ public class CustomerService {
                 customer.getName(),
                 customer.getEmail()
         );
+    }
+
+    public CustomerResponseDTO findByEmail (String email){
+        Customer customer = customerRepository
+                .findyEmail(email)
     }
 
     public CustomerResponseDTO update(Long id, CustomerRequestDTO dto) {

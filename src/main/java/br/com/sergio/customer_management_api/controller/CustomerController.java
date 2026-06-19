@@ -1,17 +1,17 @@
 package br.com.sergio.customer_management_api.controller;
 
-
 import br.com.sergio.customer_management_api.dto.CustomerRequestDTO;
 import br.com.sergio.customer_management_api.dto.CustomerResponseDTO;
 import br.com.sergio.customer_management_api.service.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.security.PublicKey;
-import java.util.List;
 
 @RestController
 @RequestMapping("/customers")
@@ -27,14 +27,25 @@ public class CustomerController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CustomerResponseDTO>> findAll() {
-        List<CustomerResponseDTO> response = customerService.findAll();
+    public ResponseEntity<Page<CustomerResponseDTO>> findAll(@PageableDefault(
+            page = 0,
+            size = 10,
+            sort = "id",
+            direction = Sort.Direction.ASC
+    ) Pageable pageable) {
+        Page<CustomerResponseDTO> response = customerService.findAll(pageable);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CustomerResponseDTO> findById(@PathVariable Long id) {
         CustomerResponseDTO response = customerService.findById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping("/email/{email}")
+    public ResponseEntity<CustomerResponseDTO> findByEmail(@PathVariable String email) {
+        CustomerResponseDTO response = customerService.findEmail(email);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
