@@ -57,9 +57,16 @@ public class CustomerService {
         );
     }
 
-    public CustomerResponseDTO findByEmail (String email){
+    public CustomerResponseDTO findByEmail(String email) {
         Customer customer = customerRepository
-                .findyEmail(email)
+                .findByEmail(email)
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found with email: " + email)
+                );
+        return new CustomerResponseDTO(
+                customer.getId(),
+                customer.getName(),
+                customer.getEmail()
+        );
     }
 
     public CustomerResponseDTO update(Long id, CustomerRequestDTO dto) {

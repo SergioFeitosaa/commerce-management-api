@@ -45,7 +45,7 @@ public class CustomerController {
 
     @GetMapping("/email/{email}")
     public ResponseEntity<CustomerResponseDTO> findByEmail(@PathVariable String email) {
-        CustomerResponseDTO response = customerService.findEmail(email);
+        CustomerResponseDTO response = customerService.findByEmail(email);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
