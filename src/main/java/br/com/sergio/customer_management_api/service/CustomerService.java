@@ -1,4 +1,4 @@
-package service;
+package br.com.sergio.customer_management_api.service;
 
 import br.com.sergio.customer_management_api.dto.CustomerRequestDTO;
 import br.com.sergio.customer_management_api.dto.CustomerResponseDTO;

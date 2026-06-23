@@ -1,4 +1,4 @@
-package br.com.sergio.customer_management_api.entity;
+package br.com.sergio.customer_management_api.database.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

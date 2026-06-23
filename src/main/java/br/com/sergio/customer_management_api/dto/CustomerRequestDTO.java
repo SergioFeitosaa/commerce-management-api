@@ -15,13 +15,13 @@ public record CustomerRequestDTO(
         @Email(message = "E-mail inválido")
         String email,
 
-        @NotBlank(message = "Telefone é Obrigatório")
+        @NotBlank(message = "CPF é Obrigatório")
         @Pattern(regexp = "\\d{11}",
                 message = "CPF deve conter 11 números"
         )
         String cpf,
 
-        @NotBlank(message = "CPF é obrigatório")
+        @NotBlank(message = "Telefone é obrigatório")
         @Pattern(regexp = "\\d{10,11}",
                 message = "Telefone deve conter 10/11 números")
         String phoneNumber) {
