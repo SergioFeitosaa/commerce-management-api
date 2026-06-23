@@ -2,15 +2,19 @@ package br.com.sergio.customer_management_api.service;
 
 import br.com.sergio.customer_management_api.dto.CustomerRequestDTO;
 import br.com.sergio.customer_management_api.dto.CustomerResponseDTO;
-import br.com.sergio.customer_management_api.entity.Customer;
+import br.com.sergio.customer_management_api.database.entity.Customer;
 import br.com.sergio.customer_management_api.exception.CustomerNotFoundException;
-import br.com.sergio.customer_management_api.repository.CustomerRepository;
+import br.com.sergio.customer_management_api.database.repository.CustomerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -64,8 +68,6 @@ class CustomerServiceTest {
     @Test
     @DisplayName("Should return all customers")
     public void shouldReturnAllCustomers() {
-
-        //ARRANGE
         Customer customer1 = new Customer();
         customer1.setId(1L);
         customer1.setName("Sérgio");
@@ -76,39 +78,36 @@ class CustomerServiceTest {
         customer2.setName("Maria");
         customer2.setEmail("maria@email.com");
 
-        when(customerRepository.findAll())
-                .thenReturn(List.of(customer1, customer2));
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Customer> customerPage = new PageImpl<>(List.of(customer1, customer2), pageable, 2);
 
-        //ACT
-        List<CustomerResponseDTO> response = customerService.findAll();
+        when(customerRepository.findAll(pageable))
+                .thenReturn(customerPage);
 
-        //ASSERT
-        assertEquals(2, response.size());
+        Page<CustomerResponseDTO> response = customerService.findAll(pageable);
 
-        assertEquals(1L, response.get(0).id());
-        assertEquals("Sérgio", response.get(0).name());
-        assertEquals("sergio@email.com", response.get(0).email());
+        assertEquals(2, response.getContent().size());
 
-        assertEquals(2L, response.get(1).id());
-        assertEquals("Maria", response.get(1).name());
-        assertEquals("maria@email.com", response.get(1).email());
+        assertEquals(1L, response.getContent().get(0).id());
+        assertEquals("Sérgio", response.getContent().get(0).name());
+
+        assertEquals(2L, response.getContent().get(1).id());
+        assertEquals("Maria", response.getContent().get(1).name());
     }
 
     @Test
-    @DisplayName("Should return empty list when no customers exist")
-    public void shouldReturnEmptyListWhenNoCustomersExist() {
+    @DisplayName("Should return empty page when no customers exist")
+    public void shouldReturnEmptyPageWhenNoCustomersExist() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Customer> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
-        // ARRANGE
-        when(customerRepository.findAll())
-                .thenReturn(List.of());
+        when(customerRepository.findAll(pageable))
+                .thenReturn(emptyPage);
 
-        // ACT
-        List<CustomerResponseDTO> response =
-                customerService.findAll();
+        Page<CustomerResponseDTO> response = customerService.findAll(pageable);
 
-        // ASSERT
         assertTrue(response.isEmpty());
-        assertEquals(0, response.size());
+        assertEquals(0, response.getContent().size());
     }
 
     @Test

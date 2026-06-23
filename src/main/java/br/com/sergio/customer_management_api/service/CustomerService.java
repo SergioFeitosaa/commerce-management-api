@@ -1,16 +1,14 @@
-package br.com.sergio.customer_management_api.service;
+package service;
 
 import br.com.sergio.customer_management_api.dto.CustomerRequestDTO;
 import br.com.sergio.customer_management_api.dto.CustomerResponseDTO;
-import br.com.sergio.customer_management_api.entity.Customer;
+import br.com.sergio.customer_management_api.database.entity.Customer;
 import br.com.sergio.customer_management_api.exception.CustomerNotFoundException;
-import br.com.sergio.customer_management_api.repository.CustomerRepository;
+import br.com.sergio.customer_management_api.database.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
