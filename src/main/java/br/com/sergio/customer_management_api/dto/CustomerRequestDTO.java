@@ -7,22 +7,25 @@ import jakarta.validation.constraints.Size;
 
 public record CustomerRequestDTO(
 
-        @NotBlank(message = "O nome é obrigatório")
-        @Size(min = 3, max = 100, message = "Nome deve ter entre 3 e 100 caracteres")
+        @NotBlank(message = "Customer name is required")
+        @Size(min = 3, max = 100, message = "Customer name must be between 3 and 100 characters")
         String name,
 
-        @NotBlank(message = "O e-mail é obrigatório")
-        @Email(message = "E-mail inválido")
+        @NotBlank(message = "Customer email is required")
+        @Email(message = "Invalid email format")
         String email,
 
-        @NotBlank(message = "CPF é Obrigatório")
-        @Pattern(regexp = "\\d{11}",
-                message = "CPF deve conter 11 números"
+        @NotBlank(message = "Customer CPF is required")
+        @Pattern(
+                regexp = "\\d{11}",
+                message = "CPF must contain 11 digits"
         )
         String cpf,
 
-        @NotBlank(message = "Telefone é obrigatório")
-        @Pattern(regexp = "\\d{10,11}",
-                message = "Telefone deve conter 10/11 números")
+        @NotBlank(message = "Customer phone number is required")
+        @Pattern(
+                regexp = "\\d{10,11}",
+                message = "Phone number must contain 10 or 11 digits"
+        )
         String phoneNumber) {
 }
