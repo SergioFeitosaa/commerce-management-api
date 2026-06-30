@@ -1,0 +1,2 @@
+ALTER TABLE product
+ALTER COLUMN updated_at DROP NOT NULL;
