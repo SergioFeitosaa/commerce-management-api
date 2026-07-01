@@ -14,14 +14,14 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(CustomerNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleCustomerNotFound(CustomerNotFoundException exception) {
+    @ExceptionHandler({CustomerNotFoundException.class,  ProductNotFoundException.class})
+    public ResponseEntity<ErrorResponseDTO> handleNotFound(RuntimeException exception) {
         ErrorResponseDTO error = new ErrorResponseDTO(
                 HttpStatus.NOT_FOUND.value(),
                 exception.getMessage(),
                 LocalDateTime.now()
         );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND.value()).body(error);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(Exception.class)

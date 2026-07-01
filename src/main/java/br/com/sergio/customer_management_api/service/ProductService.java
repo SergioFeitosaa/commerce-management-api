@@ -4,9 +4,12 @@ import br.com.sergio.customer_management_api.database.entity.Product;
 import br.com.sergio.customer_management_api.database.repository.ProductRepository;
 import br.com.sergio.customer_management_api.dto.ProductRequestDTO;
 import br.com.sergio.customer_management_api.dto.ProductResponseDTO;
-import jakarta.transaction.Transactional;
+import br.com.sergio.customer_management_api.exception.ProductNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -41,5 +44,23 @@ public class ProductService {
                 product.getUpdatedAt()
         );
     }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDTO> findAll(Pageable pageable) {
+        return productRepository.findAll(pageable)
+                .map(this::toResponseDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductResponseDTO findById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+
+       return toResponseDTO(product);
+    }
+
+
+
+
 }
 
