@@ -53,14 +53,29 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public ProductResponseDTO findById(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+        Product product = findProductById(id);
 
-       return toResponseDTO(product);
+        return toResponseDTO(product);
     }
 
+    private Product findProductById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+    }
 
+    @Transactional
+    public ProductResponseDTO update (Long id,ProductRequestDTO dto){
+        Product product = findProductById(id);
 
+        product.setName(dto.name());
+        product.setDescription(dto.description());
+        product.setPrice(dto.price());
+        product.setUpdatedAt(LocalDateTime.now());
+
+        Product updatedProduct  = productRepository.save(product);
+
+        return toResponseDTO(updatedProduct);
+    }
 
 }
 

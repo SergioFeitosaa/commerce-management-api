@@ -28,18 +28,24 @@ public class ProductController {
 
     @GetMapping
     public ResponseEntity<Page<ProductResponseDTO>> findAll(@PageableDefault(
-                    page = 0,
-                    size = 10,
-                    sort = "id",
-                    direction = Sort.Direction.ASC
-    )  Pageable pageable) {
+            page = 0,
+            size = 10,
+            sort = "id",
+            direction = Sort.Direction.ASC
+    ) Pageable pageable) {
         Page<ProductResponseDTO> response = productService.findAll(pageable);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponseDTO> findById (@PathVariable Long id) {
+    public ResponseEntity<ProductResponseDTO> findById(@PathVariable Long id) {
         ProductResponseDTO response = productService.findById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductResponseDTO> update(@PathVariable Long id, @Valid @RequestBody ProductRequestDTO dto) {
+        ProductResponseDTO response = productService.update(id, dto);
         return ResponseEntity.ok(response);
     }
 }
