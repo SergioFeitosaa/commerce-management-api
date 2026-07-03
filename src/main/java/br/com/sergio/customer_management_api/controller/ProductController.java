@@ -1,5 +1,6 @@
 package br.com.sergio.customer_management_api.controller;
 
+import br.com.sergio.customer_management_api.database.entity.Product;
 import br.com.sergio.customer_management_api.dto.ProductRequestDTO;
 import br.com.sergio.customer_management_api.dto.ProductResponseDTO;
 import br.com.sergio.customer_management_api.service.ProductService;
@@ -12,6 +13,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.PublicKey;
 
 @RestController
 @RequestMapping("/products")
@@ -46,6 +49,19 @@ public class ProductController {
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponseDTO> update(@PathVariable Long id, @Valid @RequestBody ProductRequestDTO dto) {
         ProductResponseDTO response = productService.update(id, dto);
+        return ResponseEntity.ok(response);
+    }
+
+
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<ProductResponseDTO> deactivate (@PathVariable Long id){
+        ProductResponseDTO response = productService.deactivate(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<ProductResponseDTO> activate (@PathVariable Long id){
+        ProductResponseDTO response = productService.activate(id);
         return ResponseEntity.ok(response);
     }
 }

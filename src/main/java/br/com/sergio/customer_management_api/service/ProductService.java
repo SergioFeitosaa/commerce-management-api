@@ -77,5 +77,29 @@ public class ProductService {
         return toResponseDTO(updatedProduct);
     }
 
+    @Transactional
+    public ProductResponseDTO deactivate (Long id){
+        Product product = findProductById(id);
+
+        product.setActive(false);
+        product.setUpdatedAt(LocalDateTime.now());
+
+        Product deactiveProduct = productRepository.save(product);
+
+        return toResponseDTO(deactiveProduct);
+
+    }
+
+    @Transactional
+    public ProductResponseDTO activate (Long id){
+        Product product = findProductById(id);
+
+        product.setActive(true);
+        product.setUpdatedAt(LocalDateTime.now());
+
+        Product activeProduct = productRepository.save(product);
+
+        return toResponseDTO(activeProduct);
+    }
 }
 
