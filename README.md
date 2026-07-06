@@ -1,5 +1,3 @@
-# Commerce Management API
-
 <p align="center">
   <img src="https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" />
   <img src="https://img.shields.io/badge/Spring_Boot-3.x-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" />
@@ -18,23 +16,28 @@
 
 ---
 
+# Commerce Management API
+
 ## About This Project
 
-**Commerce Management API** is a backend project built with **Java 21, Spring Boot 3, PostgreSQL, JPA, Flyway and OpenAPI**, designed to simulate the core flow of a real commercial system.
+**Commerce Management API** is a backend project built with **Java 21, Spring Boot 3, PostgreSQL, Spring Data JPA, Flyway and OpenAPI**, designed to simulate the core flow of a real commerce system.
 
-The project started as a customer management API and is evolving incrementally into a broader commerce backend, covering:
+The project started as a customer management API and is evolving incrementally into a broader commerce backend.
 
-* Customer management
-* Product management
-* Order processing
-* Order items
-* Payment flow
-* API documentation
-* Validation
-* Exception handling
-* Testing
-* Security
-* Infrastructure
+At the current stage, the project includes:
+
+- Customer management
+- Product management
+- Product activation and deactivation
+- RESTful endpoints
+- DTO pattern
+- Bean Validation
+- Centralized exception handling
+- Pagination and sorting
+- PostgreSQL integration
+- Flyway database migrations
+- Swagger/OpenAPI documentation
+- Initial Order module planning with diagrams
 
 The goal is to build a portfolio-level backend project applying professional practices commonly used in real-world software engineering teams.
 
@@ -42,33 +45,20 @@ The goal is to build a portfolio-level backend project applying professional pra
 
 ## Project Vision
 
-The long-term goal is to simulate the backend core of a commercial platform where:
+The long-term goal is to simulate the backend core of a commercial platform where customers can register, products can be managed, and orders can be created based on active products.
+
+Planned business flow:
 
 ```text
-A customer places an order
-The order contains products
-Each product becomes an order item
-The order has a payment
-The system controls status and business rules
+Customer places an Order
+Order contains one or more OrderItems
+Each OrderItem references a Product
+Product price is preserved at the moment of purchase
+Order total is calculated by the backend
+Order has a business status
 ```
 
-Example:
-
-```text
-Customer: Sérgio
-
-Order #1:
-- Product: Mechanical Keyboard
-- Quantity: 1
-- Price: 300.00
-
-Order #2:
-- Product: Gaming Mouse
-- Quantity: 1
-- Price: 150.00
-```
-
-Planned domain model:
+Current and planned domain model:
 
 ```text
 Customer
@@ -78,25 +68,39 @@ OrderItem
 Payment
 ```
 
+Current implementation status:
+
+```text
+Customer  → implemented
+Product   → implemented
+Order     → planned next
+OrderItem → planned next
+Payment   → future phase
+```
+
 ---
 
 ## Project Documentation
 
-### Order Module Diagram
+### Order Module Entity Relationship Diagram
 
-The diagram below shows how the main domain entities are connected in the Order module.
+The diagram below shows how the main domain entities are connected in the planned Order module.
 
 ![Order Module Entity Relationship Diagram](docs/diagrams/order-module-entity-relationship-diagram.png)
 
 ### Order Creation Flow
 
-The diagram below shows the basic flow for creating an order, including customer validation, product validation, historical price registration, subtotal calculation and total amount calculation.
+The diagram below shows the planned flow for creating an order, including customer validation, product validation, historical price registration, subtotal calculation and total amount calculation.
 
 ![Order Module Creation Flow](docs/diagrams/order-module-creation-flow.png)
+
+### PDF Version
 
 You can also access the full PDF version here:
 
 [Order Module Entity Relationship Diagram PDF](docs/diagrams/order-module-entity-relationship-diagram.pdf)
+
+---
 
 ## Architecture Overview
 
@@ -112,7 +116,7 @@ This API follows a **Layered Architecture**, separating responsibilities to impr
 └────────────────┬────────────────┘
                  │
 ┌────────────────▼────────────────┐
-│          SERVICE LAYER          │  ← Business rules and application logic
+│          SERVICE LAYER          │  ← Business rules, validations and transactions
 └────────────────┬────────────────┘
                  │
 ┌────────────────▼────────────────┐
@@ -132,25 +136,40 @@ This API follows a **Layered Architecture**, separating responsibilities to impr
 Client
   │
   ▼
-REST API ──────────────────────────────────────────────┐
-CustomerController                                      │
-  │                                                     │
-  ▼                                                     │
-CustomerService ──── Business Rules ──── Validations   │
-  │                                                     │
-  ▼                                                     │
-CustomerRepository                                      │
-Spring Data JPA                                         │
-  │                                                     │
-  ▼                                                     │
-PostgreSQL ◄──────── Flyway Migrations ─────────────────┘
+REST API
+  │
+  ├── CustomerController
+  │       │
+  │       ▼
+  │   CustomerService
+  │       │
+  │       ▼
+  │   CustomerRepository
+  │
+  └── ProductController
+          │
+          ▼
+      ProductService
+          │
+          ▼
+      ProductRepository
+
+Spring Data JPA
+  │
+  ▼
+PostgreSQL Database
+  ▲
+  │
+Flyway Migrations
 ```
 
 ---
 
 ## Current Domain Model
 
-At the current stage, the implemented domain is focused on `Customer`.
+### Customer
+
+The `Customer` domain represents a registered customer in the system.
 
 ```text
 Customer
@@ -161,7 +180,44 @@ Customer
 └── phoneNumber  (String)  — Customer phone number
 ```
 
-Future entities such as `Product`, `Order`, `OrderItem` and `Payment` will be added as the project evolves.
+### Product
+
+The `Product` domain represents a product available in the commerce catalog.
+
+```text
+Product
+├── id           (Long)          — Auto-generated primary key
+├── name         (String)        — Product name
+├── description  (String)        — Product description
+├── price        (BigDecimal)    — Product current price
+├── active       (boolean)       — Product availability status
+├── createdAt    (LocalDateTime) — Creation timestamp
+└── updatedAt    (LocalDateTime) — Last update timestamp
+```
+
+### Planned Order Module
+
+The next phase of the project will introduce:
+
+```text
+Order
+├── id
+├── customer
+├── items
+├── totalAmount
+├── status
+└── createdAt
+
+OrderItem
+├── id
+├── order
+├── product
+├── quantity
+├── unitPrice
+└── subtotal
+```
+
+The `OrderItem` entity will preserve the product price at the moment of purchase to keep historical order data consistent.
 
 ---
 
@@ -177,12 +233,13 @@ http://localhost:8080/swagger-ui/index.html
 
 The Swagger documentation currently includes:
 
-* API title, description, version and contact information
-* Customer endpoint grouping with `@Tag`
-* Endpoint summaries with `@Operation`
-* HTTP response documentation with `@ApiResponse`
-* Request and response schemas
-* Validation error documentation
+- API title, description, version and contact information
+- Customer endpoint grouping
+- Product endpoint grouping
+- Endpoint summaries with `@Operation`
+- HTTP response documentation with `@ApiResponse`
+- Request and response schemas
+- Validation error documentation
 
 ---
 
@@ -190,30 +247,53 @@ The Swagger documentation currently includes:
 
 ### API Overview
 
+The API is documented using Swagger/OpenAPI, making it easier to test and understand the available endpoints.
+
 ![Swagger Overview](docs/images/swagger-overview.png)
 
 ### Customer Endpoints
 
+The Customer module includes endpoints for creating, listing, searching, updating and deleting customers.
+
 ![Customer Endpoints](docs/images/swagger-customers-endpoints.png)
 
-### Create Customer Endpoint
+### Product Endpoints
 
-![Create Customer Endpoint](docs/images/swagger-post-customer.png)
+The Product module includes endpoints for creating, listing, searching, updating, activating and deactivating products.
+
+![Product Endpoints](docs/images/swagger-product-endpoints.png)
 
 ---
 
 ## API Endpoints
 
-**Base URL:** `http://localhost:8080`
+Base URL:
 
-| Method   | Endpoint                   | Description           | Responses                                    |
-| -------- | -------------------------- | --------------------- | -------------------------------------------- |
-| `GET`    | `/customers`               | List all customers    | `200 OK`                                     |
-| `POST`   | `/customers`               | Create a new customer | `201 Created`, `400 Bad Request`             |
-| `GET`    | `/customers/{id}`          | Get customer by ID    | `200 OK`, `404 Not Found`                    |
-| `GET`    | `/customers/email/{email}` | Get customer by email | `200 OK`, `404 Not Found`                    |
-| `PUT`    | `/customers/{id}`          | Update customer data  | `200 OK`, `400 Bad Request`, `404 Not Found` |
-| `DELETE` | `/customers/{id}`          | Delete customer by ID | `204 No Content`, `404 Not Found`            |
+```text
+http://localhost:8080
+```
+
+### Customer Endpoints
+
+| Method | Endpoint | Description | Responses |
+|---|---|---|---|
+| GET | `/customers` | List all customers with pagination | 200 OK |
+| POST | `/customers` | Create a new customer | 201 Created, 400 Bad Request |
+| GET | `/customers/{id}` | Get customer by ID | 200 OK, 404 Not Found |
+| GET | `/customers/email/{email}` | Get customer by email | 200 OK, 404 Not Found |
+| PUT | `/customers/{id}` | Update customer data | 200 OK, 400 Bad Request, 404 Not Found |
+| DELETE | `/customers/{id}` | Delete customer by ID | 204 No Content, 404 Not Found |
+
+### Product Endpoints
+
+| Method | Endpoint | Description | Responses |
+|---|---|---|---|
+| GET | `/products` | List all products with pagination | 200 OK |
+| POST | `/products` | Create a new product | 201 Created, 400 Bad Request |
+| GET | `/products/{id}` | Get product by ID | 200 OK, 404 Not Found |
+| PUT | `/products/{id}` | Update product data | 200 OK, 400 Bad Request, 404 Not Found |
+| PATCH | `/products/{id}/activate` | Activate a product | 200 OK, 404 Not Found |
+| PATCH | `/products/{id}/deactivate` | Deactivate a product without deleting it | 200 OK, 404 Not Found |
 
 ---
 
@@ -240,13 +320,65 @@ The Swagger documentation currently includes:
 }
 ```
 
+### Create Product Request
+
+```json
+{
+  "name": "Mouse Gamer",
+  "description": "Mouse gamer with RGB lighting and adjustable DPI.",
+  "price": 149.90
+}
+```
+
+### Product Response
+
+```json
+{
+  "id": 1,
+  "name": "Mouse Gamer",
+  "description": "Mouse gamer with RGB lighting and adjustable DPI.",
+  "price": 149.90,
+  "active": true,
+  "createdAt": "2026-07-01T10:00:00",
+  "updatedAt": null
+}
+```
+
+### Product Deactivation Response
+
+```json
+{
+  "id": 1,
+  "name": "Mouse Gamer",
+  "description": "Mouse gamer with RGB lighting and adjustable DPI.",
+  "price": 149.90,
+  "active": false,
+  "createdAt": "2026-07-01T10:00:00",
+  "updatedAt": "2026-07-01T15:30:00"
+}
+```
+
 ### Error Response
 
 ```json
 {
   "status": 404,
-  "message": "Customer not found with id: 1",
-  "timestamp": "2026-06-04T10:00:00"
+  "message": "Product not found with id: 1",
+  "timestamp": "2026-07-01T10:00:00"
+}
+```
+
+### Validation Error Response
+
+```json
+{
+  "status": 400,
+  "message": "Validation failed",
+  "errors": [
+    "name: Product name is required",
+    "price: Product price must be greater than zero"
+  ],
+  "timestamp": "2026-07-01T10:00:00"
 }
 ```
 
@@ -258,52 +390,70 @@ The Swagger documentation currently includes:
 src/main/java
 │
 ├── config
-│   └── OpenApiConfig.java             ← OpenAPI / Swagger configuration
+│   └── OpenApiConfig.java                  ← OpenAPI / Swagger configuration
 │
 ├── controller
-│   └── CustomerController.java        ← REST endpoints
+│   ├── CustomerController.java             ← Customer REST endpoints
+│   └── ProductController.java              ← Product REST endpoints
 │
 ├── service
-│   └── CustomerService.java           ← Business logic
+│   ├── CustomerService.java                ← Customer business logic
+│   └── ProductService.java                 ← Product business logic
 │
-├── repository
-│   └── CustomerRepository.java        ← JPA data access
-│
-├── entity
-│   └── Customer.java                  ← Domain entity
+├── database
+│   ├── entity
+│   │   ├── Customer.java                   ← Customer persistence entity
+│   │   └── Product.java                    ← Product persistence entity
+│   │
+│   └── repository
+│       ├── CustomerRepository.java         ← Customer JPA data access
+│       └── ProductRepository.java          ← Product JPA data access
 │
 ├── dto
-│   ├── CustomerRequestDTO.java        ← Incoming request body
-│   ├── CustomerResponseDTO.java       ← Outgoing API response
-│   └── ErrorResponseDTO.java          ← Standardized error response
+│   ├── CustomerRequestDTO.java             ← Customer request body
+│   ├── CustomerResponseDTO.java            ← Customer API response
+│   ├── ProductRequestDTO.java              ← Product request body
+│   ├── ProductResponseDTO.java             ← Product API response
+│   ├── ErrorResponseDTO.java               ← Standardized error response
+│   └── ValidationErrorResponseDTO.java     ← Standardized validation error response
 │
 ├── exception
-│   ├── CustomerNotFoundException.java ← Custom domain exception
-│   └── GlobalExceptionHandler.java    ← Centralized exception handling
-│
-├── mapper
-│   └── CustomerMapper.java            ← DTO and entity conversion
+│   ├── CustomerNotFoundException.java      ← Customer not found exception
+│   ├── ProductNotFoundException.java       ← Product not found exception
+│   └── GlobalExceptionHandler.java         ← Centralized exception handling
 │
 └── CustomerManagementApiApplication.java
+```
+
+```text
+src/main/resources
+│
+├── application.yml                         ← Application configuration
+│
+└── db
+    └── migration
+        ├── V1__create-table-customer.sql   ← Customer table migration
+        ├── V2__create-table-product.sql    ← Product table migration
+        └── V3__make-product-updated-at-nullable.sql
 ```
 
 ---
 
 ## Tech Stack
 
-| Layer / Purpose       | Technology                  |
-| --------------------- | --------------------------- |
-| Language              | Java 21                     |
-| Framework             | Spring Boot 3               |
-| REST API              | Spring Web                  |
-| Persistence           | Spring Data JPA / Hibernate |
-| Database              | PostgreSQL                  |
-| Database Migrations   | Flyway                      |
-| Validation            | Spring Validation           |
-| Documentation         | SpringDoc OpenAPI / Swagger |
-| Build Tool            | Maven                       |
-| Boilerplate Reduction | Lombok                      |
-| Architecture          | Layered Architecture        |
+| Layer / Purpose | Technology |
+|---|---|
+| Language | Java 21 |
+| Framework | Spring Boot 3 |
+| REST API | Spring Web |
+| Persistence | Spring Data JPA / Hibernate |
+| Database | PostgreSQL |
+| Database Migrations | Flyway |
+| Validation | Spring Validation |
+| Documentation | SpringDoc OpenAPI / Swagger |
+| Build Tool | Maven |
+| Boilerplate Reduction | Lombok |
+| Architecture | Layered Architecture |
 
 ---
 
@@ -313,6 +463,8 @@ src/main/java
 
 Entities are not exposed directly through the API.
 
+The project uses request and response DTOs to keep the API contract separated from the persistence model.
+
 ```text
 Customer Entity              CustomerResponseDTO
      │                               │
@@ -321,29 +473,63 @@ Customer Entity              CustomerResponseDTO
      └── Internal persistence model   └── No persistence details exposed
 ```
 
-This separation keeps the API contract cleaner and reduces coupling between database structure and external consumers.
+```text
+Product Entity               ProductResponseDTO
+     │                               │
+     ├── JPA annotations              ├── Clean API response
+     ├── Database mapping             ├── Product status exposed
+     ├── Internal persistence model   ├── Created and updated timestamps
+     └── Active/inactive control      └── No persistence details exposed
+```
+
+This separation keeps the API contract cleaner and reduces coupling between the database structure and external consumers.
 
 ---
 
-### Global Exception Handling
+### Centralized Exception Handling
 
 The project uses centralized exception handling with `@RestControllerAdvice`.
 
 This avoids scattered `try/catch` blocks in controllers and provides consistent error responses across the API.
 
+Current handled scenarios include:
+
+- Customer not found
+- Product not found
+- Validation errors
+- Generic internal server errors
+
 ---
 
-### OpenAPI Documentation
+### Product Activation and Deactivation
 
-The API is documented using OpenAPI and Swagger UI.
+Products are not physically deleted when they are no longer available for use.
 
-The documentation was added as part of the API quality phase, covering:
+Instead, the Product module uses an `active` field to control whether a product can be used in future business operations.
 
-* API metadata
-* Customer endpoints
-* HTTP response codes
-* Validation scenarios
-* Endpoint descriptions
+```text
+active = true   → product is available
+active = false  → product is inactive but still preserved in the database
+```
+
+This approach helps preserve historical data and prepares the system for the future Order module.
+
+---
+
+### Historical Price Strategy
+
+The future Order module will preserve the product price at the moment of purchase.
+
+Even if the product price changes later, old orders must keep the original unit price used in the purchase.
+
+This is why the planned OrderItem model includes:
+
+```text
+unitPrice
+subtotal
+```
+
+The backend will be responsible for calculating subtotals and total order amount.
 
 ---
 
@@ -353,10 +539,10 @@ During Swagger integration, the `Pageable` parameter was displayed in a less fri
 
 Instead of refactoring a clean Spring implementation only to improve the Swagger visual output, the decision was to keep the current implementation because:
 
-* The endpoint works correctly
-* Postman validates the expected behavior
-* The code remains clean and idiomatic with Spring Data
-* The issue does not affect business value or API functionality
+- The endpoint works correctly
+- Postman validates the expected behavior
+- The code remains clean and idiomatic with Spring Data
+- The issue does not affect business value or API functionality
 
 This reflects a real engineering trade-off: not every visual limitation requires a code refactor.
 
@@ -366,29 +552,39 @@ This reflects a real engineering trade-off: not every visual limitation requires
 
 Responsibilities are clearly separated:
 
-* **Controller:** handles HTTP requests and responses
-* **Service:** contains business rules and application logic
-* **Repository:** handles data persistence
-* **DTOs:** define the API input/output contract
-* **Exception Handler:** centralizes error handling
-* **Config:** centralizes application-level configuration
+```text
+Controller  → handles HTTP requests and responses
+Service     → contains business rules, validations and transactions
+Repository  → handles database access through Spring Data JPA
+DTO         → defines API input and output contracts
+Entity      → represents the persistence model
+Config      → centralizes application-level configuration
+Exception   → centralizes domain and API error handling
+```
+
+This structure improves maintainability, readability and prepares the project for future modules such as Order and OrderItem.
 
 ---
 
 ## What's Already Built
 
-* [x] Customer CRUD
-* [x] Layered Architecture
-* [x] DTO Pattern
-* [x] Custom Exception Handling
-* [x] Global Exception Handler
-* [x] Standardized Error Response
-* [x] PostgreSQL Integration
-* [x] Flyway Database Migrations
-* [x] Bean Validation
-* [x] Pagination and Sorting
-* [x] OpenAPI / Swagger Documentation
-* [x] Customer Endpoint Documentation
+- [x] Customer CRUD
+- [x] Product CRUD
+- [x] Product activation and deactivation
+- [x] Layered Architecture
+- [x] DTO Pattern
+- [x] Custom Exception Handling
+- [x] Global Exception Handler
+- [x] Standardized Error Response
+- [x] Standardized Validation Error Response
+- [x] PostgreSQL Integration
+- [x] Flyway Database Migrations
+- [x] Bean Validation
+- [x] Pagination and Sorting
+- [x] OpenAPI / Swagger Documentation
+- [x] Customer Endpoint Documentation
+- [x] Product Endpoint Documentation
+- [x] Order Module Planning Diagram
 
 ---
 
@@ -398,61 +594,77 @@ The project evolves incrementally following backend engineering standards.
 
 ### Phase 1 — Customer API Foundation
 
-* [x] Project setup
-* [x] Database connection
-* [x] Customer entity
-* [x] Customer repository
-* [x] Customer service
-* [x] Customer controller
-* [x] CRUD endpoints
-* [x] DTO pattern
-* [x] Exception handling
-* [x] Validation
-* [x] Pagination and sorting
+- [x] Project setup
+- [x] Database connection
+- [x] Customer entity
+- [x] Customer repository
+- [x] Customer service
+- [x] Customer controller
+- [x] CRUD endpoints
+- [x] DTO pattern
+- [x] Exception handling
+- [x] Validation
+- [x] Pagination and sorting
+- [x] Swagger documentation
 
-### Phase 2 — API Documentation and Quality
+### Phase 2 — Product Module
 
-* [x] OpenAPI configuration
-* [x] Swagger UI setup
-* [x] Customer endpoint documentation
-* [ ] Improve request/response examples in Swagger
-* [ ] Add structured logging
+- [x] Product domain modeling
+- [x] Product entity
+- [x] Product repository
+- [x] Product DTOs
+- [x] Product creation
+- [x] Product listing with pagination
+- [x] Product search by ID
+- [x] Product update
+- [x] Product activation
+- [x] Product deactivation
+- [x] Product Swagger documentation
+- [x] CustomerService refactoring for consistency
 
-### Phase 3 — Domain Expansion
+### Phase 3 — Order Module
 
-* [ ] Product management
-* [ ] Order management
-* [ ] Order items
-* [ ] Payment module
-* [ ] Order status flow
+- [x] Order module entity relationship diagram
+- [x] Order creation flow diagram
+- [ ] OrderStatus enum
+- [ ] Order entity
+- [ ] OrderItem entity
+- [ ] Order database migrations
+- [ ] Order DTOs
+- [ ] Create order endpoint
+- [ ] List orders endpoint
+- [ ] Find order by ID endpoint
+- [ ] Cancel order endpoint
+- [ ] Order Swagger documentation
+- [ ] Order module review and refactoring
 
 ### Phase 4 — Testing
 
-* [ ] Unit tests with JUnit 5 and Mockito
-* [ ] Integration tests with Spring Boot Test
-* [ ] Testcontainers with PostgreSQL
-* [ ] Test coverage report
+- [ ] Unit tests with JUnit 5 and Mockito
+- [ ] Integration tests with Spring Boot Test
+- [ ] Testcontainers with PostgreSQL
+- [ ] Test coverage report
 
 ### Phase 5 — Security
 
-* [ ] Spring Security
-* [ ] JWT authentication
-* [ ] Role-based authorization
-* [ ] Password encoding with BCrypt
+- [ ] Spring Security
+- [ ] JWT authentication
+- [ ] Role-based authorization
+- [ ] Password encoding with BCrypt
 
 ### Phase 6 — Infrastructure and DevOps
 
-* [ ] Dockerfile
-* [ ] Docker Compose
-* [ ] GitHub Actions CI/CD pipeline
-* [ ] Health check endpoint with Spring Actuator
+- [ ] Dockerfile
+- [ ] Docker Compose
+- [ ] GitHub Actions CI/CD pipeline
+- [ ] Health check endpoint with Spring Actuator
 
 ### Phase 7 — Scalability and Observability
 
-* [ ] Redis cache layer
-* [ ] Async messaging with RabbitMQ or Kafka
-* [ ] Metrics with Prometheus and Grafana
-* [ ] Distributed tracing
+- [ ] Redis cache layer
+- [ ] Async messaging with RabbitMQ or Kafka
+- [ ] Metrics with Prometheus and Grafana
+- [ ] Distributed tracing
 
 ---
 
@@ -460,9 +672,9 @@ The project evolves incrementally following backend engineering standards.
 
 ### Prerequisites
 
-* Java 21+
-* Maven
-* PostgreSQL running locally
+- Java 21+
+- Maven
+- PostgreSQL running locally
 
 ### Clone the repository
 
@@ -501,15 +713,20 @@ http://localhost:8080/swagger-ui/index.html
 
 This project is being built incrementally to strengthen backend development skills in:
 
-* Java backend development
-* Spring Boot REST APIs
-* Clean code and layered architecture
-* API documentation
-* Database persistence
-* Validation and exception handling
-* Testing strategies
-* Security fundamentals
-* DevOps and deployment practices
+- Java backend development
+- Spring Boot REST APIs
+- Clean code and layered architecture
+- API documentation
+- Database persistence
+- Bean Validation
+- Exception handling
+- DTO design
+- Business rule modeling
+- Transaction management
+- Database migrations with Flyway
+- Testing strategies
+- Security fundamentals
+- DevOps and deployment practices
 
 ---
 
