@@ -80,6 +80,24 @@ Payment
 
 ---
 
+## Project Documentation
+
+### Order Module Diagram
+
+The diagram below shows how the main domain entities are connected in the Order module.
+
+![Order Module Entity Relationship Diagram](docs/diagrams/order-module-entity-relationship-diagram.png)
+
+### Order Creation Flow
+
+The diagram below shows the basic flow for creating an order, including customer validation, product validation, historical price registration, subtotal calculation and total amount calculation.
+
+![Order Module Creation Flow](docs/diagrams/order-module-creation-flow.png)
+
+You can also access the full PDF version here:
+
+[Order Module Entity Relationship Diagram PDF](docs/diagrams/order-module-entity-relationship-diagram.pdf)
+
 ## Architecture Overview
 
 This API follows a **Layered Architecture**, separating responsibilities to improve maintainability, testability and scalability.
