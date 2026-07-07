@@ -679,8 +679,8 @@ The project evolves incrementally following backend engineering standards.
 ### Clone the repository
 
 ```bash
-git clone https://github.com/SergioFeitosaa/customer-management-api.git
-cd customer-management-api
+git clone https://github.com/SergioFeitosaa/commerce-management-api.gitv
+cd commerce-management-api
 ```
 
 ### Run the application
