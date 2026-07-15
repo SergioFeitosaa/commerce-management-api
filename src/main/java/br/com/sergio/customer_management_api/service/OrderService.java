@@ -14,9 +14,12 @@ import br.com.sergio.customer_management_api.dto.OrderRequestDTO;
 import br.com.sergio.customer_management_api.dto.OrderResponseDTO;
 import br.com.sergio.customer_management_api.enums.OrderStatus;
 import br.com.sergio.customer_management_api.exception.CustomerNotFoundException;
+import br.com.sergio.customer_management_api.exception.OrderNotFoundException;
 import br.com.sergio.customer_management_api.exception.ProductInactiveException;
 import br.com.sergio.customer_management_api.exception.ProductNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -103,6 +106,27 @@ public class OrderService {
                 itemResponses
         );
 
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDTO> findAll(Pageable page) {
+        return orderRepository.findAll(page)
+                .map(this::toOrderResponseDTO);
+    }
+
+
+    @Transactional(readOnly = true)
+    public OrderResponseDTO findById(Long id) {
+
+        Order order = findOrderById(id);
+
+        return toOrderResponseDTO(order);
 
     }
+
+    private Order findOrderById(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + id));
+    }
+
 }
