@@ -8,12 +8,12 @@ import java.util.List;
 
 public record OrderResponseDTO(
         Long id,
-        String customerId,
+        Long customerId,
         String customerName,
         BigDecimal totalAmount,
         OrderStatus status,
         LocalDateTime createdAt,
-        List<OrderItemRequestDTO> items
+        List<OrderItemResponseDTO> items
 
 ) {
 }
