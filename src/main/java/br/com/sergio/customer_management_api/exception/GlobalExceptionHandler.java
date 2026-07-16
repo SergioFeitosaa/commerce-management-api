@@ -54,6 +54,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST.value()).body(error);
     }
 
+    @ExceptionHandler(OrderAlreadyCanceledException.class)
+    public ResponseEntity<ErrorResponseDTO> handleConflict(OrderAlreadyCanceledException exception) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                HttpStatus.CONFLICT.value(),
+                exception.getMessage(),
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> handleGenericException(Exception exception) {
         ErrorResponseDTO error = new ErrorResponseDTO(

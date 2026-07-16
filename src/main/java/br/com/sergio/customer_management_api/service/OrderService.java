@@ -13,10 +13,7 @@ import br.com.sergio.customer_management_api.dto.OrderItemResponseDTO;
 import br.com.sergio.customer_management_api.dto.OrderRequestDTO;
 import br.com.sergio.customer_management_api.dto.OrderResponseDTO;
 import br.com.sergio.customer_management_api.enums.OrderStatus;
-import br.com.sergio.customer_management_api.exception.CustomerNotFoundException;
-import br.com.sergio.customer_management_api.exception.OrderNotFoundException;
-import br.com.sergio.customer_management_api.exception.ProductInactiveException;
-import br.com.sergio.customer_management_api.exception.ProductNotFoundException;
+import br.com.sergio.customer_management_api.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -129,4 +126,17 @@ public class OrderService {
                 .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + id));
     }
 
+    @Transactional
+    public OrderResponseDTO cancel(Long id) {
+
+        Order order = findOrderById(id);
+
+        if (order.getStatus() == OrderStatus.CANCELED) {
+            throw new OrderAlreadyCanceledException("Order is already canceled with id: " + id);
+        }
+
+        order.setStatus(OrderStatus.CANCELED);
+
+        return toOrderResponseDTO(order);
+    }
 }
