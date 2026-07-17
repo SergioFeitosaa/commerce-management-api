@@ -22,13 +22,18 @@
 
 **Commerce Management API** is a backend project built with **Java 21, Spring Boot 3, PostgreSQL, Spring Data JPA, Flyway and OpenAPI**, designed to simulate the core flow of a real commerce system.
 
-The project started as a customer management API and is evolving incrementally into a broader commerce backend.
+The project started as a customer management API and is evolving incrementally into a broader commerce backend with connected business modules, relational modeling and real-world business rules.
 
 At the current stage, the project includes:
 
 - Customer management
 - Product management
 - Product activation and deactivation
+- Order creation and retrieval
+- Order cancellation
+- Customer, Product, Order and OrderItem relationships
+- Historical product price preservation
+- Backend-calculated subtotals and order totals
 - RESTful endpoints
 - DTO pattern
 - Bean Validation
@@ -37,7 +42,6 @@ At the current stage, the project includes:
 - PostgreSQL integration
 - Flyway database migrations
 - Swagger/OpenAPI documentation
-- Initial Order module planning with diagrams
 
 The goal is to build a portfolio-level backend project applying professional practices commonly used in real-world software engineering teams.
 
@@ -45,62 +49,89 @@ The goal is to build a portfolio-level backend project applying professional pra
 
 ## Project Vision
 
-The long-term goal is to simulate the backend core of a commercial platform where customers can register, products can be managed, and orders can be created based on active products.
+The long-term goal is to simulate the backend core of a commercial platform where customers can register, products can be managed, and orders can be created from active products.
 
-Planned business flow:
+Core business flow:
 
 ```text
 Customer places an Order
 Order contains one or more OrderItems
 Each OrderItem references a Product
 Product price is preserved at the moment of purchase
-Order total is calculated by the backend
-Order has a business status
+Order subtotal and total amount are calculated by the backend
+Order follows a controlled business status lifecycle
 ```
 
-Current and planned domain model:
-
-```text
-Customer
-Product
-Order
-OrderItem
-Payment
-```
-
-Current implementation status:
+Current domain implementation status:
 
 ```text
 Customer  → implemented
 Product   → implemented
-Order     → planned next
-OrderItem → planned next
+Order     → implemented
+OrderItem → implemented
 Payment   → future phase
 ```
 
 ---
 
-## Project Documentation
+## Domain Overview
 
-### Order Module Entity Relationship Diagram
+The diagram below provides a high-level view of the current and planned domain modules.
 
-The diagram below shows how the main domain entities are connected in the planned Order module.
+```mermaid
+flowchart LR
+    C[Customer] -->|places| O[Order]
+    O -->|contains one or more| OI[OrderItem]
+    OI -->|references| P[Product]
+    O -->|will be associated with| PY[Payment]
 
-![Order Module Entity Relationship Diagram](docs/diagrams/order-module-entity-relationship-diagram.png)
+    C:::implemented
+    P:::implemented
+    O:::implemented
+    OI:::implemented
+    PY:::planned
 
-### Order Creation Flow
+    classDef implemented fill:#0f766e,color:#ffffff,stroke:#134e4a,stroke-width:2px;
+    classDef planned fill:#e5e7eb,color:#374151,stroke:#9ca3af,stroke-width:2px,stroke-dasharray: 5 5;
+```
 
-The diagram below shows the planned flow for creating an order, including customer validation, product validation, historical price registration, subtotal calculation and total amount calculation.
-
-![Order Module Creation Flow](docs/diagrams/order-module-creation-flow.png)
-
-### PDF Version
-
-You can also access the full PDF version here:
-
-[Order Module Entity Relationship Diagram PDF](docs/diagrams/order-module-entity-relationship-diagram.pdf)
+> `Customer`, `Product`, `Order` and `OrderItem` are currently implemented. `Payment` is planned for a future phase.
 
 ---
+
+## Project Documentation
+
+### Commerce Domain Overview
+
+The diagram below provides a high-level view of the Commerce Management API domain and its current implementation status.
+
+Customer, Product, Order and OrderItem are already implemented and connected through the main commerce business flow. Payment is planned as the next project phase.
+
+![Commerce Management API Domain Overview](docs/diagrams/commerce-management-api-domain-overview.png)
+
+### Order Module — JPA Relationships and Aggregate Design
+
+The Order module introduces the first multi-entity business aggregate in the project.
+
+A customer may place multiple orders, while each order belongs to exactly one customer. Every order contains one or more order items, and each item references a product from the catalog.
+
+`Order` controls the lifecycle of its `OrderItem` collection through cascade operations and orphan removal. Customer and Product remain independent entities and are referenced without cascading their lifecycle into the order aggregate.
+
+The model also preserves the product price at the moment of purchase by copying `Product.price` into `OrderItem.unitPrice`. This prevents future product price changes from modifying historical orders.
+
+![Order Module JPA Relationships and Aggregate Design](docs/diagrams/order-module-jpa-relationships-and-aggregate-design.png)
+
+### Transactional Order Creation Flow
+
+Creating an order involves more than inserting a record into the database.
+
+The backend validates the request, verifies that the customer exists, validates that every requested product exists and is active, creates the order items, preserves each product's current price and calculates all monetary values internally.
+
+The entire operation is executed as a single transaction. If the customer or any product is invalid, the complete operation is rejected and no partial order is persisted.
+
+This approach protects data consistency and prevents the API client from controlling sensitive values such as `unitPrice`, `subtotal` and `totalAmount`.
+
+![Transactional Order Creation Flow](docs/diagrams/order-module-transactional-order-creation-flow.png)
 
 ## Architecture Overview
 
@@ -139,20 +170,18 @@ Client
 REST API
   │
   ├── CustomerController
-  │       │
-  │       ▼
-  │   CustomerService
-  │       │
-  │       ▼
-  │   CustomerRepository
+  │       └── CustomerService
+  │               └── CustomerRepository
   │
-  └── ProductController
-          │
-          ▼
-      ProductService
-          │
-          ▼
-      ProductRepository
+  ├── ProductController
+  │       └── ProductService
+  │               └── ProductRepository
+  │
+  └── OrderController
+          └── OrderService
+                  ├── OrderRepository
+                  ├── CustomerRepository
+                  └── ProductRepository
 
 Spring Data JPA
   │
@@ -162,6 +191,8 @@ PostgreSQL Database
   │
 Flyway Migrations
 ```
+
+The `OrderService` coordinates multiple domain resources because creating an order requires validating the customer, validating every product, creating order items, calculating monetary values and persisting the complete aggregate.
 
 ---
 
@@ -195,29 +226,66 @@ Product
 └── updatedAt    (LocalDateTime) — Last update timestamp
 ```
 
-### Planned Order Module
+### Order
 
-The next phase of the project will introduce:
+The `Order` domain represents a purchase created by one customer.
 
 ```text
 Order
-├── id
-├── customer
-├── items
-├── totalAmount
-├── status
-└── createdAt
-
-OrderItem
-├── id
-├── order
-├── product
-├── quantity
-├── unitPrice
-└── subtotal
+├── id           (Long)          — Auto-generated primary key
+├── customer     (Customer)      — Customer responsible for the order
+├── items        (List)          — Items included in the purchase
+├── totalAmount  (BigDecimal)    — Total calculated by the backend
+├── status       (OrderStatus)   — Current order business status
+└── createdAt    (LocalDateTime) — Creation timestamp generated by the backend
 ```
 
-The `OrderItem` entity will preserve the product price at the moment of purchase to keep historical order data consistent.
+### OrderItem
+
+The `OrderItem` domain represents one product inside an order.
+
+```text
+OrderItem
+├── id         (Long)       — Auto-generated primary key
+├── order      (Order)      — Parent order
+├── product    (Product)    — Referenced product
+├── quantity   (Integer)    — Purchased quantity
+├── unitPrice  (BigDecimal) — Product price preserved at purchase time
+└── subtotal   (BigDecimal) — quantity × unitPrice
+```
+
+The historical price is stored in `OrderItem.unitPrice`. Therefore, changes to the current product price do not modify previously created orders.
+
+---
+
+## Order Creation Flow
+
+Creating an order is not treated as a simple database insert. The backend coordinates a sequence of validations and calculations:
+
+```text
+1. Receive customerId and order items
+2. Validate that the customer exists
+3. Validate that every product exists
+4. Reject inactive products
+5. Create the Order with its initial status
+6. Create one OrderItem for each requested product
+7. Copy the current Product price into OrderItem.unitPrice
+8. Calculate every item subtotal
+9. Calculate Order.totalAmount
+10. Persist the order aggregate
+11. Return the order response
+```
+
+Main business rules:
+
+- An order belongs to exactly one customer
+- An order must contain at least one item
+- An invalid item rejects the entire order
+- Inactive products cannot be included in new orders
+- `OrderItem` cannot exist without its parent `Order`
+- Monetary totals are calculated by the backend
+- The client does not define the purchase price or final total
+- A canceled order remains stored for historical consistency
 
 ---
 
@@ -234,12 +302,11 @@ http://localhost:8080/swagger-ui/index.html
 The Swagger documentation currently includes:
 
 - API title, description, version and contact information
-- Customer endpoint grouping
-- Product endpoint grouping
+- Customer, Product and Order endpoint grouping
 - Endpoint summaries with `@Operation`
 - HTTP response documentation with `@ApiResponse`
 - Request and response schemas
-- Validation error documentation
+- Validation and business error documentation
 
 ---
 
@@ -247,7 +314,7 @@ The Swagger documentation currently includes:
 
 ### API Overview
 
-The API is documented using Swagger/OpenAPI, making it easier to test and understand the available endpoints.
+The API is documented using Swagger/OpenAPI, making it easier to explore and test the available endpoints.
 
 ![Swagger Overview](docs/images/swagger-overview.png)
 
@@ -262,6 +329,12 @@ The Customer module includes endpoints for creating, listing, searching, updatin
 The Product module includes endpoints for creating, listing, searching, updating, activating and deactivating products.
 
 ![Product Endpoints](docs/images/swagger-product-endpoints.png)
+
+### Order Endpoints
+
+The Order module includes endpoints for creating orders, listing all orders, retrieving an order by ID and canceling an existing order.
+
+![Order Endpoints](docs/images/swagger-order-endpoints.png)
 
 ---
 
@@ -294,6 +367,15 @@ http://localhost:8080
 | PUT | `/products/{id}` | Update product data | 200 OK, 400 Bad Request, 404 Not Found |
 | PATCH | `/products/{id}/activate` | Activate a product | 200 OK, 404 Not Found |
 | PATCH | `/products/{id}/deactivate` | Deactivate a product without deleting it | 200 OK, 404 Not Found |
+
+### Order Endpoints
+
+| Method | Endpoint | Description | Responses |
+|---|---|---|---|
+| GET | `/orders` | List all orders | 200 OK |
+| POST | `/orders` | Create a new order | 201 Created, 400 Bad Request, 404 Not Found |
+| GET | `/orders/{id}` | Find an order by ID | 200 OK, 404 Not Found |
+| PATCH | `/orders/{id}/cancel` | Cancel an existing order | 200 OK, 404 Not Found, 409 Conflict |
 
 ---
 
@@ -344,17 +426,47 @@ http://localhost:8080
 }
 ```
 
-### Product Deactivation Response
+### Create Order Request
+
+```json
+{
+  "customerId": 1,
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 2
+    },
+    {
+      "productId": 2,
+      "quantity": 1
+    }
+  ]
+}
+```
+
+### Order Response
 
 ```json
 {
   "id": 1,
-  "name": "Mouse Gamer",
-  "description": "Mouse gamer with RGB lighting and adjustable DPI.",
-  "price": 149.90,
-  "active": false,
-  "createdAt": "2026-07-01T10:00:00",
-  "updatedAt": "2026-07-01T15:30:00"
+  "customerId": 1,
+  "status": "PENDING",
+  "totalAmount": 349.70,
+  "createdAt": "2026-07-17T10:30:00",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 2,
+      "unitPrice": 149.90,
+      "subtotal": 299.80
+    },
+    {
+      "productId": 2,
+      "quantity": 1,
+      "unitPrice": 49.90,
+      "subtotal": 49.90
+    }
+  ]
 }
 ```
 
@@ -364,7 +476,7 @@ http://localhost:8080
 {
   "status": 404,
   "message": "Product not found with id: 1",
-  "timestamp": "2026-07-01T10:00:00"
+  "timestamp": "2026-07-17T10:00:00"
 }
 ```
 
@@ -375,10 +487,10 @@ http://localhost:8080
   "status": 400,
   "message": "Validation failed",
   "errors": [
-    "name: Product name is required",
-    "price: Product price must be greater than zero"
+    "items: Order must contain at least one item",
+    "quantity: Quantity must be greater than zero"
   ],
-  "timestamp": "2026-07-01T10:00:00"
+  "timestamp": "2026-07-17T10:00:00"
 }
 ```
 
@@ -389,52 +501,30 @@ http://localhost:8080
 ```text
 src/main/java
 │
-├── config
-│   └── OpenApiConfig.java                  ← OpenAPI / Swagger configuration
-│
-├── controller
-│   ├── CustomerController.java             ← Customer REST endpoints
-│   └── ProductController.java              ← Product REST endpoints
-│
-├── service
-│   ├── CustomerService.java                ← Customer business logic
-│   └── ProductService.java                 ← Product business logic
-│
+├── config                         ← OpenAPI and application configuration
+├── controller                     ← Customer, Product and Order REST endpoints
+├── service                        ← Business rules, validations and transactions
 ├── database
-│   ├── entity
-│   │   ├── Customer.java                   ← Customer persistence entity
-│   │   └── Product.java                    ← Product persistence entity
-│   │
-│   └── repository
-│       ├── CustomerRepository.java         ← Customer JPA data access
-│       └── ProductRepository.java          ← Product JPA data access
-│
-├── dto
-│   ├── CustomerRequestDTO.java             ← Customer request body
-│   ├── CustomerResponseDTO.java            ← Customer API response
-│   ├── ProductRequestDTO.java              ← Product request body
-│   ├── ProductResponseDTO.java             ← Product API response
-│   ├── ErrorResponseDTO.java               ← Standardized error response
-│   └── ValidationErrorResponseDTO.java     ← Standardized validation error response
-│
-├── exception
-│   ├── CustomerNotFoundException.java      ← Customer not found exception
-│   ├── ProductNotFoundException.java       ← Product not found exception
-│   └── GlobalExceptionHandler.java         ← Centralized exception handling
-│
-└── CustomerManagementApiApplication.java
+│   ├── entity                     ← Customer, Product, Order and OrderItem entities
+│   └── repository                 ← Spring Data JPA repositories
+├── dto                            ← Request and response API contracts
+├── enums                          ← Business status types such as OrderStatus
+├── exception                      ← Domain exceptions and global error handling
+└── CommerceManagementApiApplication.java
 ```
 
 ```text
 src/main/resources
 │
-├── application.yml                         ← Application configuration
-│
+├── application.yml                ← Application configuration
 └── db
-    └── migration
-        ├── V1__create-table-customer.sql   ← Customer table migration
-        ├── V2__create-table-product.sql    ← Product table migration
-        └── V3__make-product-updated-at-nullable.sql
+    └── migration                  ← Versioned Customer, Product, Order and OrderItem migrations
+```
+
+```text
+docs
+├── diagrams                       ← Domain relationships and order flow diagrams
+└── images                         ← Swagger UI screenshots used in this README
 ```
 
 ---
@@ -463,26 +553,23 @@ src/main/resources
 
 Entities are not exposed directly through the API.
 
-The project uses request and response DTOs to keep the API contract separated from the persistence model.
+Request and response DTOs keep the external API contract separated from the persistence model. This avoids leaking JPA relationships and internal database details to API consumers.
 
 ```text
-Customer Entity              CustomerResponseDTO
-     │                               │
-     ├── JPA annotations              ├── Clean API response
-     ├── Database mapping             ├── Stable external contract
-     └── Internal persistence model   └── No persistence details exposed
+HTTP Request
+     │
+     ▼
+Request DTO
+     │
+     ▼
+Service and Domain Model
+     │
+     ▼
+Response DTO
+     │
+     ▼
+HTTP Response
 ```
-
-```text
-Product Entity               ProductResponseDTO
-     │                               │
-     ├── JPA annotations              ├── Clean API response
-     ├── Database mapping             ├── Product status exposed
-     ├── Internal persistence model   ├── Created and updated timestamps
-     └── Active/inactive control      └── No persistence details exposed
-```
-
-This separation keeps the API contract cleaner and reduces coupling between the database structure and external consumers.
 
 ---
 
@@ -496,40 +583,74 @@ Current handled scenarios include:
 
 - Customer not found
 - Product not found
-- Validation errors
+- Order not found
+- Invalid or inactive product
+- Invalid order state transitions
+- Bean Validation errors
 - Generic internal server errors
 
 ---
 
 ### Product Activation and Deactivation
 
-Products are not physically deleted when they are no longer available for use.
-
-Instead, the Product module uses an `active` field to control whether a product can be used in future business operations.
+Products are not physically deleted when they are no longer available.
 
 ```text
-active = true   → product is available
-active = false  → product is inactive but still preserved in the database
+active = true   → product can be included in new orders
+active = false  → product remains stored but cannot be included in new orders
 ```
 
-This approach helps preserve historical data and prepares the system for the future Order module.
+This strategy preserves product records and protects historical order references.
+
+---
+
+### Order as an Aggregate
+
+`Order` acts as the main aggregate for the purchase flow.
+
+Its items are created and managed as part of the order lifecycle. `OrderItem` does not exist independently from its parent order, which keeps the domain model consistent and allows cascade operations and orphan removal to reflect the business relationship.
 
 ---
 
 ### Historical Price Strategy
 
-The future Order module will preserve the product price at the moment of purchase.
-
-Even if the product price changes later, old orders must keep the original unit price used in the purchase.
-
-This is why the planned OrderItem model includes:
+The product's current price is copied into `OrderItem.unitPrice` when the order is created.
 
 ```text
-unitPrice
-subtotal
+Product.price          → current catalog price
+OrderItem.unitPrice    → historical purchase price
 ```
 
-The backend will be responsible for calculating subtotals and total order amount.
+Even if `Product.price` changes later, previously created orders retain the original value used in the transaction.
+
+---
+
+### Backend-Owned Calculations
+
+The client sends product identifiers and quantities, but does not control monetary values.
+
+```text
+subtotal   = quantity × unitPrice
+totalAmount = sum of all item subtotals
+```
+
+Both values are calculated by the backend to prevent inconsistent or manipulated order totals.
+
+---
+
+### Transactional Order Creation
+
+Order creation changes multiple related records as one business operation.
+
+Customer validation, product validation, item creation, total calculation and persistence must succeed together. If any item is invalid, the entire operation is rejected instead of creating a partial order.
+
+---
+
+### Order Cancellation
+
+Canceling an order changes its business status instead of deleting the record.
+
+This preserves historical information and prepares the system for future payment, audit and reporting requirements.
 
 ---
 
@@ -537,14 +658,14 @@ The backend will be responsible for calculating subtotals and total order amount
 
 During Swagger integration, the `Pageable` parameter was displayed in a less friendly way by Swagger UI.
 
-Instead of refactoring a clean Spring implementation only to improve the Swagger visual output, the decision was to keep the current implementation because:
+Instead of refactoring a clean Spring implementation only to improve the visual output, the current approach was preserved because:
 
 - The endpoint works correctly
 - Postman validates the expected behavior
-- The code remains clean and idiomatic with Spring Data
-- The issue does not affect business value or API functionality
+- The implementation remains idiomatic with Spring Data
+- The limitation does not affect business value or API behavior
 
-This reflects a real engineering trade-off: not every visual limitation requires a code refactor.
+This reflects a real engineering trade-off: not every documentation limitation requires changing working production code.
 
 ---
 
@@ -562,30 +683,6 @@ Config      → centralizes application-level configuration
 Exception   → centralizes domain and API error handling
 ```
 
-This structure improves maintainability, readability and prepares the project for future modules such as Order and OrderItem.
-
----
-
-## What's Already Built
-
-- [x] Customer CRUD
-- [x] Product CRUD
-- [x] Product activation and deactivation
-- [x] Layered Architecture
-- [x] DTO Pattern
-- [x] Custom Exception Handling
-- [x] Global Exception Handler
-- [x] Standardized Error Response
-- [x] Standardized Validation Error Response
-- [x] PostgreSQL Integration
-- [x] Flyway Database Migrations
-- [x] Bean Validation
-- [x] Pagination and Sorting
-- [x] OpenAPI / Swagger Documentation
-- [x] Customer Endpoint Documentation
-- [x] Product Endpoint Documentation
-- [x] Order Module Planning Diagram
-
 ---
 
 ## Engineering Roadmap
@@ -596,10 +693,8 @@ The project evolves incrementally following backend engineering standards.
 
 - [x] Project setup
 - [x] Database connection
-- [x] Customer entity
-- [x] Customer repository
-- [x] Customer service
-- [x] Customer controller
+- [x] Customer entity and repository
+- [x] Customer service and controller
 - [x] CRUD endpoints
 - [x] DTO pattern
 - [x] Exception handling
@@ -610,56 +705,67 @@ The project evolves incrementally following backend engineering standards.
 ### Phase 2 — Product Module
 
 - [x] Product domain modeling
-- [x] Product entity
-- [x] Product repository
+- [x] Product persistence
 - [x] Product DTOs
-- [x] Product creation
+- [x] Product creation, retrieval and update
 - [x] Product listing with pagination
-- [x] Product search by ID
-- [x] Product update
-- [x] Product activation
-- [x] Product deactivation
+- [x] Product activation and deactivation
 - [x] Product Swagger documentation
 - [x] CustomerService refactoring for consistency
 
 ### Phase 3 — Order Module
 
+- [x] Order domain modeling
 - [x] Order module entity relationship diagram
 - [x] Order creation flow diagram
-- [ ] OrderStatus enum
-- [ ] Order entity
-- [ ] OrderItem entity
-- [ ] Order database migrations
-- [ ] Order DTOs
-- [ ] Create order endpoint
-- [ ] List orders endpoint
-- [ ] Find order by ID endpoint
-- [ ] Cancel order endpoint
-- [ ] Order Swagger documentation
-- [ ] Order module review and refactoring
+- [x] `OrderStatus` business status
+- [x] `Order` and `OrderItem` persistence model
+- [x] JPA relationships and aggregate ownership
+- [x] Order database migrations
+- [x] Order request and response DTOs
+- [x] Customer and product validation during order creation
+- [x] Historical unit price preservation
+- [x] Automatic subtotal and total calculation
+- [x] Transactional order creation
+- [x] Create order endpoint
+- [x] List orders endpoint
+- [x] Find order by ID endpoint
+- [x] Cancel order endpoint
+- [x] Order exception handling
+- [x] Order Swagger documentation
+- [x] Order module review and refactoring
 
-### Phase 4 — Testing
+### Phase 4 — Payment Module
+
+- [ ] Payment domain modeling
+- [ ] Payment status lifecycle
+- [ ] Order-to-Payment relationship
+- [ ] Payment processing simulation
+- [ ] Payment API documentation
+- [ ] Payment tests
+
+### Phase 5 — Testing
 
 - [ ] Unit tests with JUnit 5 and Mockito
 - [ ] Integration tests with Spring Boot Test
 - [ ] Testcontainers with PostgreSQL
 - [ ] Test coverage report
 
-### Phase 5 — Security
+### Phase 6 — Security
 
 - [ ] Spring Security
 - [ ] JWT authentication
 - [ ] Role-based authorization
 - [ ] Password encoding with BCrypt
 
-### Phase 6 — Infrastructure and DevOps
+### Phase 7 — Infrastructure and DevOps
 
 - [ ] Dockerfile
 - [ ] Docker Compose
 - [ ] GitHub Actions CI/CD pipeline
 - [ ] Health check endpoint with Spring Actuator
 
-### Phase 7 — Scalability and Observability
+### Phase 8 — Scalability and Observability
 
 - [ ] Redis cache layer
 - [ ] Async messaging with RabbitMQ or Kafka
@@ -673,13 +779,13 @@ The project evolves incrementally following backend engineering standards.
 ### Prerequisites
 
 - Java 21+
-- Maven
+- Maven or Maven Wrapper
 - PostgreSQL running locally
 
 ### Clone the repository
 
 ```bash
-git clone https://github.com/SergioFeitosaa/commerce-management-api.gitv
+git clone https://github.com/SergioFeitosaa/commerce-management-api.git
 cd commerce-management-api
 ```
 
@@ -716,13 +822,14 @@ This project is being built incrementally to strengthen backend development skil
 - Java backend development
 - Spring Boot REST APIs
 - Clean code and layered architecture
+- Domain and business rule modeling
+- JPA relationships
+- Transaction management
+- DTO design
 - API documentation
 - Database persistence
 - Bean Validation
 - Exception handling
-- DTO design
-- Business rule modeling
-- Transaction management
 - Database migrations with Flyway
 - Testing strategies
 - Security fundamentals
