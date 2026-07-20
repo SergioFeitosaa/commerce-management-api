@@ -14,7 +14,8 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler({CustomerNotFoundException.class, ProductNotFoundException.class, OrderNotFoundException.class})
+    @ExceptionHandler({CustomerNotFoundException.class, ProductNotFoundException.class, OrderNotFoundException.class,
+            PaymentNotFoundException.class})
     public ResponseEntity<ErrorResponseDTO> handleNotFound(RuntimeException exception) {
         ErrorResponseDTO error = new ErrorResponseDTO(
                 HttpStatus.NOT_FOUND.value(),
@@ -54,8 +55,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST.value()).body(error);
     }
 
-    @ExceptionHandler(OrderAlreadyCanceledException.class)
-    public ResponseEntity<ErrorResponseDTO> handleConflict(OrderAlreadyCanceledException exception) {
+    @ExceptionHandler({OrderAlreadyCanceledException.class, PaymentAlreadyProcessedException.class,
+            OrderAlreadyPaidException.class, PendingPaymentAlreadyExistsException.class,
+            OrderHasPaymentHistoryException.class})
+    public ResponseEntity<ErrorResponseDTO> handleConflict(RuntimeException exception) {
         ErrorResponseDTO error = new ErrorResponseDTO(
                 HttpStatus.CONFLICT.value(),
                 exception.getMessage(),
