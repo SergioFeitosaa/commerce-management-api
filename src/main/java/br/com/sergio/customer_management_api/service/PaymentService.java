@@ -72,7 +72,7 @@ public class PaymentService {
         Payment payment = findPaymentById(paymentId);
 
         if (!payment.getStatus().equals(PaymentStatus.PENDING)) {
-            throw new PaymentAlreadyProcessedException("Payment already exists with id: " + paymentId);
+            throw new PaymentAlreadyProcessedException("Payment already processed with id: " + paymentId);
         }
 
         switch (dto.result()) {
