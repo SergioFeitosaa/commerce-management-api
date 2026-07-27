@@ -60,6 +60,8 @@ Each OrderItem references a Product
 Product price is preserved at the moment of purchase
 Order subtotal and total amount are calculated by the backend
 Order follows a controlled business status lifecycle
+Payment is created and processed according to a controlled payment lifecycle
+Payment status transitions are managed by backend business rules
 ```
 
 Current domain implementation status:
@@ -69,7 +71,7 @@ Customer  → implemented
 Product   → implemented
 Order     → implemented
 OrderItem → implemented
-Payment   → future phase
+Payment   → implemented
 ```
 
 ---
@@ -89,13 +91,14 @@ flowchart LR
     P:::implemented
     O:::implemented
     OI:::implemented
-    PY:::planned
+    PY:::implemented
 
     classDef implemented fill:#0f766e,color:#ffffff,stroke:#134e4a,stroke-width:2px;
+    classDef planned fill:#e5e7eb,color:#374151,stroke:#9ca3af,stroke-dasharray: 5 5;
     classDef planned fill:#e5e7eb,color:#374151,stroke:#9ca3af,stroke-width:2px,stroke-dasharray: 5 5;
 ```
 
-> `Customer`, `Product`, `Order` and `OrderItem` are currently implemented. `Payment` is planned for a future phase.
+> `> `Customer`, `Product`, `Order`, `OrderItem` and `Payment` are currently implemented. The Payment module introduces the first financial workflow in the system, connecting order lifecycle and payment status management.
 
 ---
 
@@ -132,6 +135,119 @@ The entire operation is executed as a single transaction. If the customer or any
 This approach protects data consistency and prevents the API client from controlling sensitive values such as `unitPrice`, `subtotal` and `totalAmount`.
 
 ![Transactional Order Creation Flow](docs/diagrams/order-module-transactional-order-creation-flow.png)
+
+## Payment Module
+
+The Payment module represents the payment lifecycle associated with an existing order.
+
+The backend controls payment creation and processing through business rules, ensuring that payment status transitions happen consistently and preventing invalid state changes.
+
+### Implemented Features
+
+- Payment domain modeling
+- Order-to-Payment relationship
+- Payment creation linked to an existing order
+- Payment status lifecycle management
+- Payment processing simulation
+- Payment validation rules
+- Payment business exceptions
+- REST endpoints for payment operations
+- Swagger/OpenAPI documentation
+
+
+### Payment Lifecycle
+
+The payment lifecycle follows a controlled state transition:
+
+```text
+Payment created
+
+        ↓
+
+PENDING
+
+        ↓
+
+APPROVED
+or
+REJECTED## Payment Module
+
+The Payment module represents the payment lifecycle associated with an existing order.
+
+The backend controls payment creation and processing through business rules, ensuring that payment status transitions happen consistently and preventing invalid state changes.
+
+### Implemented Features
+
+- Payment domain modeling
+- Order-to-Payment relationship
+- Payment creation linked to an existing order
+- Payment status lifecycle management
+- Payment processing simulation
+- Payment validation rules
+- Payment business exceptions
+- REST endpoints for payment operations
+- Swagger/OpenAPI documentation
+
+
+### Payment Lifecycle
+
+The payment lifecycle follows a controlled state transition:
+
+```text
+Payment created
+
+        ↓
+
+PENDING
+
+        ↓
+
+APPROVED
+or
+REJECTED## Payment Module
+
+The Payment module represents the payment lifecycle associated with an existing order.
+
+The backend controls payment creation and processing through business rules, ensuring that payment status transitions happen consistently and preventing invalid state changes.
+
+### Implemented Features
+
+- Payment domain modeling
+- Order-to-Payment relationship
+- Payment creation linked to an existing order
+- Payment status lifecycle management
+- Payment processing simulation
+- Payment validation rules
+- Payment business exceptions
+- REST endpoints for payment operations
+- Swagger/OpenAPI documentation
+
+
+### Payment Lifecycle
+
+The payment lifecycle follows a controlled state transition:
+
+```text
+Payment created
+
+        ↓
+
+PENDING
+
+        ↓
+
+APPROVED
+or
+REJECTED
+
+1. Receive payment processing request
+2. Validate that the payment exists
+3. Verify that payment status is PENDING
+4. Apply processing result
+5. Update payment status
+6. Register processing timestamp
+7. Persist payment changes
+8. Return payment response
 
 ## Architecture Overview
 
@@ -177,11 +293,16 @@ REST API
   │       └── ProductService
   │               └── ProductRepository
   │
-  └── OrderController
-          └── OrderService
-                  ├── OrderRepository
-                  ├── CustomerRepository
-                  └── ProductRepository
+  ├── OrderController
+  │       └── OrderService
+  │               ├── OrderRepository
+  │               ├── CustomerRepository
+  │               └── ProductRepository
+  │
+  └── PaymentController
+          └── PaymentService
+                  ├── PaymentRepository
+                  └── OrderRepository
 
 Spring Data JPA
   │
@@ -256,6 +377,32 @@ OrderItem
 
 The historical price is stored in `OrderItem.unitPrice`. Therefore, changes to the current product price do not modify previously created orders.
 
+### Payment
+
+The `Payment` domain represents the payment lifecycle associated with an order.
+
+```text
+Payment
+├── id            (Long)             — Auto-generated primary key
+├── order         (Order)            — Order associated with the payment
+├── amount        (BigDecimal)       — Payment amount calculated by the backend
+├── method        (PaymentMethod)    — Payment method used
+├── status        (PaymentStatus)    — Current payment processing status
+├── createdAt     (LocalDateTime)    — Payment creation timestamp
+└── processedAt   (LocalDateTime)    — Payment processing timestamp
+
+The Payment entity controls the payment lifecycle and ensures that status transitions follow the defined business rules.
+
+Current payment statuses:
+
+PENDING
+   |
+   ├── APPROVED
+   |
+   └── REJECTED
+  
+A payment can only be processed while its status is PENDING. Once a payment reaches a final state (APPROVED or REJECTED), it cannot be processed again.
+
 ---
 
 ## Order Creation Flow
@@ -286,6 +433,24 @@ Main business rules:
 - Monetary totals are calculated by the backend
 - The client does not define the purchase price or final total
 - A canceled order remains stored for historical consistency
+
+---
+
+## Payment Processing Flow
+
+The Payment module controls the payment lifecycle associated with an existing order.
+
+The backend processes payment attempts by validating the payment state and applying the processing result according to the business rules.
+
+```text
+1. Receive payment processing request
+2. Validate that the payment exists
+3. Verify that payment status is PENDING
+4. Apply processing result
+5. Update payment status
+6. Register processing timestamp
+7. Persist payment changes
+8. Return payment response
 
 ---
 
@@ -336,6 +501,12 @@ The Order module includes endpoints for creating orders, listing all orders, ret
 
 ![Order Endpoints](docs/images/swagger-order-endpoints.png)
 
+### Payment Endpoints
+
+The Payment module includes endpoints for creating payment attempts and processing payment results.
+
+![Payment Endpoints](docs/images/swagger-payment-endpoints.png)
+
 ---
 
 ## API Endpoints
@@ -376,6 +547,13 @@ http://localhost:8080
 | POST | `/orders` | Create a new order | 201 Created, 400 Bad Request, 404 Not Found |
 | GET | `/orders/{id}` | Find an order by ID | 200 OK, 404 Not Found |
 | PATCH | `/orders/{id}/cancel` | Cancel an existing order | 200 OK, 404 Not Found, 409 Conflict |
+
+### Payment Endpoints
+
+| Method | Endpoint | Description | Responses |
+|---|---|---|---|
+| POST | `/payments` | Create a new payment attempt for an existing order | 201 Created, 400 Bad Request, 404 Not Found, 409 Conflict |
+| PATCH | `/payments/{id}/processPayment` | Process a pending payment according to the processing result | 200 OK, 400 Bad Request, 404 Not Found, 409 Conflict |
 
 ---
 
@@ -494,7 +672,49 @@ http://localhost:8080
 }
 ```
 
----
+### Create Payment Request
+
+```json
+{
+  "orderId": 1
+}
+```
+
+### Payment Response
+
+```json
+{
+  "id": 1,
+  "orderId": 1,
+  "amount": 349.70,
+  "method": "PIX",
+  "status": "PENDING",
+  "createdAt": "2026-07-26T10:00:00",
+  "processedAt": null
+}
+```
+
+### Process Payment Request
+
+```json
+{
+  "result": "APPROVED"
+}
+```
+
+### Process Payment Request
+
+```json
+{
+  "id": 1,
+  "orderId": 1,
+  "amount": 349.70,
+  "method": "PIX",
+  "status": "APPROVED",
+  "createdAt": "2026-07-26T10:00:00",
+  "processedAt": "2026-07-26T10:05:00"
+}
+```
 
 ## Project Structure
 
@@ -502,13 +722,13 @@ http://localhost:8080
 src/main/java
 │
 ├── config                         ← OpenAPI and application configuration
-├── controller                     ← Customer, Product and Order REST endpoints
+├── controller                     ← Customer, Product, Order and Payment REST endpoints
 ├── service                        ← Business rules, validations and transactions
 ├── database
-│   ├── entity                     ← Customer, Product, Order and OrderItem entities
+│   ├── entity                     ← Customer, Product, Order, OrderItem and Payment entities
 │   └── repository                 ← Spring Data JPA repositories
 ├── dto                            ← Request and response API contracts
-├── enums                          ← Business status types such as OrderStatus
+├── enums                          ← Business status types such as OrderStatus and PaymentStatus
 ├── exception                      ← Domain exceptions and global error handling
 └── CommerceManagementApiApplication.java
 ```
@@ -518,7 +738,7 @@ src/main/resources
 │
 ├── application.yml                ← Application configuration
 └── db
-    └── migration                  ← Versioned Customer, Product, Order and OrderItem migrations
+    └── migration                  ← Versioned Customer, Product, Order, OrderItem and Payment migrations
 ```
 
 ```text
@@ -584,8 +804,11 @@ Current handled scenarios include:
 - Customer not found
 - Product not found
 - Order not found
+- Payment not found
 - Invalid or inactive product
 - Invalid order state transitions
+- Payment already processed
+- Pending payment conflicts
 - Bean Validation errors
 - Generic internal server errors
 
@@ -737,12 +960,12 @@ The project evolves incrementally following backend engineering standards.
 
 ### Phase 4 — Payment Module
 
-- [ ] Payment domain modeling
-- [ ] Payment status lifecycle
-- [ ] Order-to-Payment relationship
-- [ ] Payment processing simulation
-- [ ] Payment API documentation
-- [ ] Payment tests
+- [x] Payment domain modeling
+- [x] Payment status lifecycle
+- [x] Order-to-Payment relationship
+- [x] Payment processing simulation
+- [x] Payment API documentation
+- [x] Payment tests
 
 ### Phase 5 — Testing
 
